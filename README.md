@@ -54,7 +54,7 @@ Drop photos in `public/images/` with matching filenames, then commit and push.
 1. Push this folder to a GitHub repo.
 2. Go to **Settings → Pages**.
 3. Source: **Deploy from a branch** → `main` → `/ (root)` → Save.
-4. Site is live at `https://<username>.github.io/<repo-name>/`
+4. Site is live at `https://carnielgael.github.io/caps-collection/`
 
 Updates: just push to `main` — rebuilds in ~30 seconds.
 
