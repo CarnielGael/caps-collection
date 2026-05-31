@@ -30,12 +30,12 @@ Install the Live Server extension → right-click `index.html` → Open with Liv
 
 ## Updating your inventory
 
-Edit `src/data/caps.csv` — open it in Excel, Numbers, or any text editor:
+Edit `src/data/caps.csv` 
 
 ```
-Nom,Quantité,Type,Photo
-Kronenbourg 1664,3,beer,0001.jpg
-Coca-Cola,1,soda,
+Nom,Quantité,Type,Photo,Pays,Pays_code
+Grimbergen,6,Bière,grim_original.jpg,Belgique,BE
+Boylan,1,soda,boylan.jpg,Irlande,IE
 ```
 
 | Column | Description |
@@ -44,8 +44,10 @@ Coca-Cola,1,soda,
 | **Quantité** | How many physical caps you own |
 | **Type** | One of: `beer`, `soda`, `cider` |
 | **Photo** | Filename only (e.g. `0001.jpg`), leave empty for emoji placeholder |
+| **Pays** | Origin country of the caps |
+| **Pays_code** | 2 letter country code (exception for: SCO Scotland, ENG England, WAL Wales) |
 
-Drop photos in `public/images/` with matching filenames, then commit and push.
+Photos in `public/images/` with matching filenames.
 
 ---
 
