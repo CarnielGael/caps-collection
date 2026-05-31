@@ -113,6 +113,9 @@
       <select id="typeFilter">
         <option value="">Tous les types</option>
       </select>
+      <select id="countryFilter">
+        <option value="">Tous les pays</option>
+      </select>
       <select class="sort-select" id="sortSelect">
         <option value="name-asc">A → Z</option>
         <option value="name-desc">Z → A</option>
@@ -149,7 +152,7 @@
   <script>
     let allCaps = [];
     let typeColorMap = {};
-    let state = { query: '', type: '', sort: 'name-asc', dupsOnly: false };
+    let state = { query: '', type: '', sort: 'name-asc', dupsOnly: false, country: '' };
 
     async function loadData() {
       try {
@@ -172,6 +175,17 @@
         opt.value = type;
         opt.textContent = type;
         select.appendChild(opt);
+      });
+
+      // Populate country dropdown
+      const countrySelect = document.getElementById('countryFilter');
+      const uniqueCountries = [...new Set(allCaps.map(c => c.country_code).filter(c => c))].sort();
+      uniqueCountries.forEach(code => {
+        const opt = document.createElement('option');
+        opt.value = code;
+        const name = allCaps.find(c => c.country_code === code)?.country || code;
+        opt.textContent = `${countryFlag(code)} ${name}`;
+        countrySelect.appendChild(opt);
       });
 
       renderStats();
@@ -216,6 +230,7 @@
       let caps = [...allCaps];
       if (state.query)    caps = caps.filter(c => c.name.toLowerCase().includes(state.query.toLowerCase()));
       if (state.type)     caps = caps.filter(c => c.type === state.type);
+      if (state.country) caps = caps.filter(c => c.country_code === state.country);
       if (state.dupsOnly) caps = caps.filter(c => (c.quantity || 1) > 1);
       caps.sort((a, b) => {
         if (state.sort === 'name-asc')  return a.name.localeCompare(b.name);
@@ -327,8 +342,10 @@
     document.getElementById('modalPrev').addEventListener('click', e => { e.stopPropagation(); navigateModal(-1); });
     document.getElementById('modalNext').addEventListener('click', e => { e.stopPropagation(); navigateModal(1); });
 
+    // Filtering and sorting
     document.getElementById('search').addEventListener('input', e => { state.query = e.target.value; renderGallery(); });
     document.getElementById('typeFilter').addEventListener('change', e => { state.type = e.target.value; renderGallery(); });
+    document.getElementById('countryFilter').addEventListener('change', e => { state.country = e.target.value; renderGallery(); });
     document.getElementById('sortSelect').addEventListener('change', e => { state.sort = e.target.value; renderGallery(); });
     document.getElementById('dupToggle').addEventListener('click', () => {
       state.dupsOnly = !state.dupsOnly;
@@ -344,11 +361,16 @@
 
     function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function typeEmoji() { return '🪙'; }
+    
     function countryFlag(code) {
-      // Converts ISO 3166-1 alpha-2 code (e.g. "FR") to flag emoji
+      const exceptions = {
+        'SCO': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+        'ENG': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+        'WAL': '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+      };
+      if (exceptions[code.toUpperCase()]) return exceptions[code.toUpperCase()];
       return code.toUpperCase().replace(/./g, c => String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0)));
     }
-
     document.getElementById('footerYear').textContent = new Date().getFullYear();
     loadData();
   </script>
