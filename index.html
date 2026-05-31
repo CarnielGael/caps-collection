@@ -194,6 +194,10 @@
 
       renderStats();
       renderGallery();
+      // Open the card if in URL
+      const params = new URLSearchParams(window.location.search);
+      const capId = parseInt(params.get('cap'));
+      if (capId) openModal(capId);
     }
 
     function parseCSV(text) {
@@ -286,6 +290,7 @@
       const cap = allCaps.find(c => c.id === id);
       if (!cap) return;
       currentModalId = id;
+      history.pushState({ capId: id }, '', `?cap=${id}`);
       const qty = cap.quantity || 1;
       document.getElementById('modalName').textContent = cap.name;
       document.getElementById('modalBadge').className = `badge badge-type`;
@@ -314,6 +319,7 @@
       document.getElementById('modalBackdrop').classList.remove('open');
       document.body.style.overflow = '';
       currentModalId = null;
+      history.pushState(null, '', window.location.pathname);
     }
 
     document.getElementById('modalClose').addEventListener('click', closeModal);
