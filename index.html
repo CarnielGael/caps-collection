@@ -262,7 +262,7 @@
         const qty = cap.quantity || 1;
         const img = cap.image
           ? `<img src="public/images/${cap.image}" alt="${escHtml(cap.name)}" loading="lazy" />`
-          : `<span class="placeholder">${typeEmoji(cap.type)}</span>`;
+          : `<img src="public/images/missing_caps.jpg" alt="Image manquante" loading="lazy" />`;
         return `<div class="card" style="animation-delay:${Math.min(i*30,400)}ms" data-id="${cap.id}" role="button" tabindex="0" aria-label="${escHtml(cap.name)}">
           <div class="card-img">${img}</div>
           <div class="card-body">
@@ -302,7 +302,7 @@
       modalCountry.style.display = cap.country_code ? '' : 'none';
       document.getElementById('modalImg').innerHTML = cap.image
         ? `<img src="public/images/${cap.image}" alt="${escHtml(cap.name)}" />`
-        : `<span class="placeholder">${typeEmoji(cap.type)}</span>`;
+        : `<img src="public/images/missing_caps.jpg" alt="Image manquante" />`;
       document.getElementById('modalBackdrop').classList.add('open');
       document.body.style.overflow = 'hidden';
     }
