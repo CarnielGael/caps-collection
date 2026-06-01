@@ -154,25 +154,16 @@
     let typeColorMap = {};
     let state = { query: '', type: '', sort: 'name-asc', dupsOnly: false, country: '' };
 
-    // Builds a img tag that tries .jpg, then .png, then falls back to missing_caps.jpg
-    /*
+    // Builds a img tag that tries .jpg, then .png, then falls back to missing_caps.(jpg|png)
     function imgTag(name, alt, lazy) {
+      const cleanName = name ? name.replace(/\.(jpg|png)$/i, '') : 'missing_caps';
       const loading = lazy ? ' loading="lazy"' : '';
-      if (!name) return `<img src="public/images/missing_caps.jpg" alt="Image manquante"${loading} />`;
-      return `<img src="public/images/${name}.jpg" alt="${alt}"${loading}
-        onerror="if(this.src.endsWith('.jpg')){this.src='public/images/${name}.png'}else{this.src='public/images/missing_caps.jpg';this.onerror=null}" />`;
-    }
-    */
 
-    function imgTag(name, alt, lazy) {
-      const loading = lazy ? ' loading="lazy"' : '';
-      if (!name) return `<img src="public/images/missing_caps" alt="Image manquante"${loading} />`;     
-      const cleanName = name.replace(/\.(jpg|png)$/i, ''); // Removes .jpg, .jpeg, or .png from the end of the name if present
-      
-      return `<img src="public/images/${cleanName}.jpg" alt="${alt}"${loading}
-        onerror="if(this.src.endsWith('.jpg')){this.src='public/images/${cleanName}.png'}else{this.src='public/images/missing_caps.jpg';this.onerror=null}" />`;
+      return `<img src="public/images/${cleanName}.jpg" alt="${alt || 'Image manquante'}"${loading} 
+        onerror="this.src.endsWith('${cleanName}.jpg') ? this.src='public/images/${cleanName}.png' : 
+                 this.src.endsWith('${cleanName}.png') ? this.src='public/images/missing_caps.jpg' : 
+                 this.src.endsWith('missing_caps.jpg') ? this.src='public/images/missing_caps.png' : this.onerror=null;" />`;
     }
-
     async function loadData() {
       try {
         const res = await fetch('src/data/caps.csv');
