@@ -221,7 +221,8 @@
       const total = allCaps.length;
       const physical = allCaps.reduce((s, c) => s + (c.quantity || 1), 0);
       const byType = {};
-      allCaps.forEach(c => { byType[c.type] = (byType[c.type] || 0) + (c.quantity || 1); });
+      // allCaps.forEach(c => { byType[c.type] = (byType[c.type] || 0) + (c.quantity || 1); }); // number of caps by type
+      allCaps.forEach(c => { byType[c.type] = (byType[c.type] || 0) + (1); }); // number of unique caps by type
       const typeColors = ['#d4a843', '#4eacd4', '#7ac96e', '#d4726a', '#a084d4', '#d4a384'];
 
     document.getElementById('stats').innerHTML = `
