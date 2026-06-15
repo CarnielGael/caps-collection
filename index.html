@@ -291,6 +291,8 @@
       const lines = text.trim().split('\n').filter(l => l.trim());
       return lines.slice(1).map((line, i) => {
         const [nom, quantite, type, photo, pays, code, description] = line.split(';').map(v => v.trim());
+        //Clean
+        let cleanDesc = (description || '').trim().replace(/^"/, '');
         return {
           id:       i + 1,
           name:     nom     || '',
@@ -299,7 +301,7 @@
           image:    photo   || '',
           country:  pays    || '',
           country_code: code|| '',
-          description: description || '' 
+          description: cleanDesc || '' 
         };
       });
     }
