@@ -135,6 +135,35 @@
       40% { transform: rotate(var(--final-deg)) scale(1.25); filter: drop-shadow(0 0 15px var(--accent)); }
       100% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 0 transparent); }
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .stats-dialog {
+      width: min(900px, 94vw);
+      max-height: 90vh;
+      margin: auto;
+      padding: 1.25rem;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .stats-dialog::backdrop {
+      background: rgba(0, 0, 0, .8);
+      backdrop-filter: blur(6px);
+    }
+    .stats-dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .chart-container {
+      position: relative;
+      height: min(70vh, 650px);
+    }
     .modal-img .placeholder { font-size: 5rem; opacity: .15; }
     .modal-info { padding: 1.2rem 1.4rem 1.4rem; }
     .modal-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: .04em; margin-bottom: .5rem; }
@@ -154,7 +183,12 @@
 <body>
   <header>
     <div class="logo">Caps<span>Collection</span></div>
-    <button class="theme-btn" id="themeBtn" title="Toggle theme">☀️</button>
+    <div class="header-actions">
+      <button class="theme-btn" id="statsBtn" title="Statistiques"
+              aria-label="Afficher les statistiques">📊</button>
+      <button class="theme-btn" id="themeBtn" title="Changer de thème"
+              aria-label="Changer de thème">☀️</button>
+    </div>
   </header>
   <main>
     <div class="stats" id="stats"></div>
@@ -225,7 +259,17 @@
       </div>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <dialog id="statsDialog" class="stats-dialog">
+    <div class="stats-dialog-header">
+      <h2>Répartition par pays</h2>
+      <button id="statsClose" class="theme-btn" aria-label="Fermer">×</button>
+    </div>
 
+    <div class="chart-container">
+      <canvas id="countryChart"></canvas>
+    </div>
+  </dialog>
   <script>
     let allCaps = [];
     let typeColorMap = {};
@@ -241,6 +285,189 @@
                  this.src.endsWith('${cleanName}.jpg') ? this.src='public/images/missing_caps.png' : 
                  this.src.endsWith('missing_caps.png') ? this.src='public/images/missing_caps.jpg' : this.onerror=null;" />`;
     }
+    let countryChart = null;
+
+    function renderCountryChart() {
+      const countries = [...new Set(
+        allCaps.map(cap => cap.country).filter(Boolean)
+      )];
+
+      const types = [...new Set(
+        allCaps.map(cap => cap.type).filter(Boolean)
+      )];
+
+      const totals = Object.fromEntries(
+        countries.map(country => [
+          country,
+          allCaps
+            .filter(cap => cap.country === country)
+            .length //.reduce((sum, cap) => sum + cap.quantity, 0) // for quantity
+        ])
+      );
+
+      countries.sort((a, b) => totals[b] - totals[a]);
+
+      const datasets = types.map(type => ({
+        label: type,
+        data: countries.map(country =>
+          allCaps
+            .filter(cap => cap.country === country && cap.type === type)
+            .length 
+        ),
+        backgroundColor: typeColorMap[type]
+      }));
+
+      countryChart?.destroy();
+      // Dynamic background
+      const theme = document.documentElement.dataset.theme || 'dark';
+      const background = localStorage.getItem('caps-bg-base') || 'fabric.jpg';
+
+      const chartBackgroundImage = new Image();
+      chartBackgroundImage.src =
+        `public/backgrounds/${theme}_${background}`;
+
+      chartBackgroundImage.onload = () => {
+        countryChart?.draw();
+      };
+
+      const chartBackgroundPlugin = {
+        id: 'chartBackground',
+
+        beforeDraw(chart) {
+          if (!chartBackgroundImage.complete) return;
+
+          const { ctx, chartArea } = chart;
+          const width = chartArea.right - chartArea.left;
+          const height = chartArea.bottom - chartArea.top;
+
+          ctx.save();
+
+          // Restrict the image to the plot area.
+          ctx.beginPath();
+          ctx.rect(
+            chartArea.left,
+            chartArea.top,
+            width,
+            height
+          );
+          ctx.clip();
+
+          ctx.globalAlpha = 0.20;
+
+          ctx.drawImage(
+            chartBackgroundImage,
+            chartArea.left,
+            chartArea.top,
+            width,
+            height
+          );
+
+          ctx.restore();
+        }
+      };
+      const countryFlagsPlugin = {
+        id: 'countryFlags',
+
+        afterDraw(chart) {
+          const { ctx, chartArea, scales } = chart;
+          const yScale = scales.y;
+
+          ctx.save();
+          ctx.font = "16px 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          countries.forEach((country, index) => {
+            const cap = allCaps.find(
+              item => item.country === country
+            );
+
+            if (!cap?.country_code) return;
+
+            const flag = countryFlag(cap.country_code);
+            const y = yScale.getPixelForTick(index);
+            const x = chartArea.left - 25;
+
+            ctx.fillText(flag, x, y);
+          });
+
+          ctx.restore();
+        }
+      };
+
+      countryChart = new Chart(
+        document.getElementById('countryChart'),
+        {
+          type: 'bar',
+
+          data: {
+            // Keep emojis out of Chart.js labels.
+            labels: countries,
+            datasets
+          },
+
+          plugins: [
+            chartBackgroundPlugin,
+            countryFlagsPlugin
+          ],
+
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+
+            scales: {
+              x: {
+                stacked: true,
+                beginAtZero: true,
+                ticks: {
+                  precision: 0,
+                  stepSize: 2
+                },
+                grid: {
+                  color: 'rgba(128, 128, 128, 0.18)',
+                  lineWidth: 1,
+                  tickLength: 6
+                },
+                border: {
+                  color: 'rgba(128, 128, 128, 0.35)',
+                  width: 2
+                }
+              },
+
+              y: {
+                stacked: true,
+                ticks: {
+                  // Reserve a space between names and bars for flags.
+                  padding: 20
+                },
+                  grid: {
+                  color: 'rgba(128, 128, 128, 0.18)',
+                  lineWidth: 1,
+                  tickLength: 6
+                },
+                border: {
+                  color: 'rgba(128, 128, 128, 0.35)',
+                  width: 2
+                }
+              }
+            },
+
+            plugins: {
+              legend: {
+                position: 'bottom'
+              },
+
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            }
+          }
+        }
+      );
+    }
+    
     async function loadData() {
       try {
         const res = await fetch('src/data/caps.csv');
@@ -533,6 +760,24 @@
     const themeBtn = document.getElementById('themeBtn');
     themeBtn.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
     
+
+    // Statistics dialog
+    const statsDialog = document.getElementById('statsDialog');
+
+    document.getElementById('statsBtn').addEventListener('click', () => {
+      renderCountryChart();
+      statsDialog.showModal();
+    });
+
+    document.getElementById('statsClose').addEventListener('click', () => {
+      statsDialog.close();
+    });
+
+    statsDialog.addEventListener('click', event => {
+      if (event.target === statsDialog) statsDialog.close();
+    });
+
+
     // Background window toggle controls
     const bgPickerBtn = document.getElementById('bgPickerBtn');
     const bgPreviewWindow = document.getElementById('bgPreviewWindow');
