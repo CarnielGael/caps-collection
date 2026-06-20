@@ -358,7 +358,8 @@
 
             const flag = countryFlag(cap.country_code);
             const y = yScale.getPixelForTick(index);
-            const x = chartArea.left - (isMobile ? 20 : 25);
+            const flagWidth = ctx.measureText(flag).width;
+            const x = chartArea.left - 14 - (flagWidth / 2);
 
             ctx.fillText(flag, x, y);
           });
@@ -386,6 +387,12 @@
             responsive: true,
             maintainAspectRatio: false,
             indexAxis: 'y',
+
+            layout: {
+              padding: {
+                left: isMobile ? 46 : 52
+              }
+            },
 
             interaction: {
               mode: 'index',
@@ -418,12 +425,8 @@
               y: {
                 stacked: true,
                 ticks: {
-                  // Reserve a space between names and bars for flags.
-                  padding: isMobile ? 17 : 20,
-                  autoSkip: false,
-                  font: {
-                    size: isMobile ? 10 : 12
-                  }
+                  display: false,
+                  autoSkip: false
                 },
                   grid: {
                   color: 'rgba(128, 128, 128, 0.18)',
