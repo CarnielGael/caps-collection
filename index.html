@@ -141,14 +141,15 @@
       gap: .5rem;
     }
     .stats-dialog {
-      width: min(900px, 94vw);
-      max-height: 90vh;
+      width: min(960px, calc(100vw - 2rem));
+      max-height: 92dvh;
       margin: auto;
       padding: 1.25rem;
       color: var(--text);
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
+      overflow-y: auto;
     }
     .stats-dialog::backdrop {
       background: rgba(0, 0, 0, .8);
@@ -162,6 +163,8 @@
     }
     .chart-container {
       position: relative;
+      width: 100%;
+      min-height: 420px;
       height: min(70vh, 650px);
     }
     .modal-img .placeholder { font-size: 5rem; opacity: .15; }
@@ -177,6 +180,17 @@
     .modal-nav-next { right: 0; border-radius: 6px 0 0 6px; }
     .modal { position: relative; }
     footer { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: .78rem; border-top: 1px solid var(--border); margin-top: 3rem; }
+    @media (max-width: 600px) {
+      .stats-dialog {
+        width: calc(100vw - 1rem);
+        max-height: calc(100dvh - 1rem);
+        padding: .85rem;
+        border-radius: 8px;
+      }
+      .stats-dialog-header { margin-bottom: .65rem; }
+      .stats-dialog-header h2 { font-size: 1.1rem; }
+      .chart-container { min-height: 520px; }
+    }
     @media (max-width: 480px) { .gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } .result-meta { display: none; } }
   </style>
 </head>
@@ -288,6 +302,7 @@
     let countryChart = null;
 
     function renderCountryChart() {
+      const isMobile = window.matchMedia('(max-width: 600px)').matches;
       const countries = [...new Set(
         allCaps.map(cap => cap.country).filter(Boolean)
       )];
@@ -318,53 +333,10 @@
       }));
 
       countryChart?.destroy();
-      // Dynamic background
-      const theme = document.documentElement.dataset.theme || 'dark';
-      const background = localStorage.getItem('caps-bg-base') || 'fabric.jpg';
+      const chartContainer = document.querySelector('.chart-container');
+      const rowHeight = isMobile ? 36 : 30;
+      chartContainer.style.height = `${Math.max(isMobile ? 520 : 420, countries.length * rowHeight + 100)}px`;
 
-      const chartBackgroundImage = new Image();
-      chartBackgroundImage.src =
-        `public/backgrounds/${theme}_${background}`;
-
-      chartBackgroundImage.onload = () => {
-        countryChart?.draw();
-      };
-
-      const chartBackgroundPlugin = {
-        id: 'chartBackground',
-
-        beforeDraw(chart) {
-          if (!chartBackgroundImage.complete) return;
-
-          const { ctx, chartArea } = chart;
-          const width = chartArea.right - chartArea.left;
-          const height = chartArea.bottom - chartArea.top;
-
-          ctx.save();
-
-          // Restrict the image to the plot area.
-          ctx.beginPath();
-          ctx.rect(
-            chartArea.left,
-            chartArea.top,
-            width,
-            height
-          );
-          ctx.clip();
-
-          ctx.globalAlpha = 0.20;
-
-          ctx.drawImage(
-            chartBackgroundImage,
-            chartArea.left,
-            chartArea.top,
-            width,
-            height
-          );
-
-          ctx.restore();
-        }
-      };
       const countryFlagsPlugin = {
         id: 'countryFlags',
 
@@ -373,7 +345,7 @@
           const yScale = scales.y;
 
           ctx.save();
-          ctx.font = "16px 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+          ctx.font = `${isMobile ? 14 : 16}px 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
@@ -386,7 +358,7 @@
 
             const flag = countryFlag(cap.country_code);
             const y = yScale.getPixelForTick(index);
-            const x = chartArea.left - 25;
+            const x = chartArea.left - (isMobile ? 20 : 25);
 
             ctx.fillText(flag, x, y);
           });
@@ -407,7 +379,6 @@
           },
 
           plugins: [
-            chartBackgroundPlugin,
             countryFlagsPlugin
           ],
 
@@ -422,7 +393,10 @@
                 beginAtZero: true,
                 ticks: {
                   precision: 0,
-                  stepSize: 2
+                  stepSize: 2,
+                  font: {
+                    size: isMobile ? 10 : 12
+                  }
                 },
                 grid: {
                   color: 'rgba(128, 128, 128, 0.18)',
@@ -439,7 +413,11 @@
                 stacked: true,
                 ticks: {
                   // Reserve a space between names and bars for flags.
-                  padding: 20
+                  padding: isMobile ? 17 : 20,
+                  autoSkip: false,
+                  font: {
+                    size: isMobile ? 10 : 12
+                  }
                 },
                   grid: {
                   color: 'rgba(128, 128, 128, 0.18)',
@@ -765,8 +743,8 @@
     const statsDialog = document.getElementById('statsDialog');
 
     document.getElementById('statsBtn').addEventListener('click', () => {
-      renderCountryChart();
       statsDialog.showModal();
+      requestAnimationFrame(renderCountryChart);
     });
 
     document.getElementById('statsClose').addEventListener('click', () => {
@@ -775,6 +753,13 @@
 
     statsDialog.addEventListener('click', event => {
       if (event.target === statsDialog) statsDialog.close();
+    });
+
+    let chartResizeTimer;
+    window.addEventListener('resize', () => {
+      if (!statsDialog.open) return;
+      clearTimeout(chartResizeTimer);
+      chartResizeTimer = setTimeout(renderCountryChart, 150);
     });
 
 
