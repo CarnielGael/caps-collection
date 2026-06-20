@@ -387,6 +387,12 @@
             maintainAspectRatio: false,
             indexAxis: 'y',
 
+            interaction: {
+              mode: 'index',
+              axis: 'y',
+              intersect: false
+            },
+
             scales: {
               x: {
                 stacked: true,
@@ -438,6 +444,7 @@
 
               tooltip: {
                 mode: 'index',
+                axis: 'y',
                 intersect: false
               }
             }
